@@ -1,126 +1,112 @@
 # Giai đoạn 1: Thiết lập Spring Security và JWT - API Đăng ký & Đăng nhập
 
-Tài liệu này hướng dẫn chi tiết cách triển khai hệ thống xác thực và phân quyền cơ bản cho dự án Air Monitoring System sử dụng Spring Boot, Spring Security và JSON Web Token (JWT).
+Tài liệu này hướng dẫn chi tiết cách triển khai hệ thống xác thực và phân quyền cho dự án Air Monitoring System.
 
 ## 1. Mục tiêu
-- Thiết lập cấu hình bảo mật với Spring Security.
-- Triển khai cơ chế xác thực dựa trên Token (JWT).
-- Xây dựng API Đăng ký (Signup) và Đăng nhập (Signin).
-- Lưu trữ thông tin người dùng vào cơ sở dữ liệu (H2/MySQL/PostgreSQL).
+- Thiết lập cấu hình bảo mật với Spring Security 6.x.
+- Triển khai cơ chế xác thực Stateless dựa trên JWT (JJWT 0.12.5).
+- Xây dựng API Đăng ký, Đăng nhập và Làm mới Token.
+- Lưu trữ thông tin người dùng vào PostgreSQL.
 
 ## 2. Thành phần hệ thống
 
-### 2.1. Dependencies (Đã có trong pom.xml)
-- `spring-boot-starter-security`: Bộ khung bảo mật.
-- `jjwt`: Thư viện tạo và xử lý JWT.
-- `spring-boot-starter-data-jpa`: Tương tác với cơ sở dữ liệu.
-- `spring-boot-starter-validation`: Kiểm tra dữ liệu đầu vào.
-- `lombok`: Giảm bớt code boilerplate.
+### 2.1. Dependencies chính (pom.xml)
+- `spring-boot-starter-security`: Framework bảo mật.
+- `jjwt-api`, `jjwt-impl`, `jjwt-jackson`: Thư viện JWT phiên bản mới nhất (0.12.5).
+- `spring-boot-starter-data-jpa`: Tương tác DB qua Hibernate.
+- `spring-dotenv`: Tự động nạp biến môi trường từ file `.env`.
+- `postgresql`: Driver kết nối PostgreSQL.
 
-### 2.2. Cấu trúc thư mục đề xuất (Theo Feature-based & Layered)
+### 2.2. Cấu trúc thư mục thực tế
 ```text
 src/main/java/com/example/demo/
-├── auth/ (Chức năng Xác thực)
-│   ├── controller/
-│   │   └── AuthController.java (Tiếp nhận request)
-│   ├── service/
-│   │   ├── AuthService.java (Interface định nghĩa nghiệp vụ)
-│   │   └── AuthServiceImpl.java (Triển khai nghiệp vụ)
-│   ├── repository/
-│   │   ├── UserRepository.java (Giao tiếp DB cho User)
-│   │   └── RoleRepository.java (Giao tiếp DB cho Role)
-│   ├── entity/
-│   │   ├── User.java (Mapping DB table 'users')
-│   │   ├── Role.java (Mapping DB table 'roles')
-│   │   └── ERole.java (Enum: ROLE_USER, ROLE_ADMIN)
-│   └── dto/ (Data Transfer Object)
-│       ├── request/
-│       │   ├── LoginRequest.java (Dữ liệu user gửi lên khi login)
-│       │   └── SignupRequest.java (Dữ liệu user gửi lên khi đăng ký)
-│       └── response/
-│           ├── JwtResponse.java (Dữ liệu trả về khi login thành công)
-│           └── MessageResponse.java (Thông báo phản hồi chung)
-├── security/ (Cấu hình bảo mật hệ thống)
-│   ├── jwt/
-│   │   ├── AuthEntryPointJwt.java (Xử lý lỗi 401 Unauthorized)
-│   │   ├── AuthTokenFilter.java (Bộ lọc JWT cho mỗi request)
-│   │   └── JwtUtils.java (Tạo/Giải mã/Kiểm tra Token)
-│   ├── services/
-│   │   ├── UserDetailsImpl.java (Cấu trúc User trong Security)
-│   │   └── UserDetailsServiceImpl.java (Tìm User từ DB cho Security)
-│   └── WebSecurityConfig.java (Cấu hình FilterChain, PasswordEncoder)
+├── auth/ (Xác thực & Định danh)
+│   ├── controller/ AuthController.java
+│   ├── dto/ (AuthRequest, AuthResponse, RegisterRequest,...)
+│   └── service/ AuthService.java
+├── user/ (Quản lý người dùng)
+│   ├── entity/ User.java
+│   ├── repository/ UserRepository.java
+│   ├── service/ UserService.java
+│   └── controller/ UserController.java
+├── security/ (Cấu hình hệ thống)
+│   ├── ApplicationConfig.java (Beans: PasswordEncoder, AuthenticationManager)
+│   ├── JwtService.java (Xử lý Token)
+│   ├── JwtAuthenticationFilter.java (Bộ lọc Request)
+│   └── SecurityConfiguration.java (Cấu hình FilterChain)
+└── base/ (Cấu trúc nền tảng)
+    └── entity/ BaseEntity.java (Chứa ID, CreatedAt, UpdatedAt)
 ```
 
-## 3. Quy trình xử lý (Flow)
-1. **User**: Gửi Request (JSON) tới API.
-2. **Controller**: Tiếp nhận Request, sử dụng các lớp trong thư mục `dto.request` để map dữ liệu. Gọi đến **Service**.
-3. **Service**: Xử lý logic nghiệp vụ (Kiểm tra tồn tại, mã hóa mật khẩu, xác thực bằng AuthenticationManager). Tương tác với **Repository**.
-4. **Repository**: Thực hiện các câu lệnh truy vấn tới **Database** thông qua **Entity**.
-5. **Service**: Nhận kết quả từ Repository, xử lý và đóng gói vào các lớp trong thư mục `dto.response`.
-6. **Controller**: Trả về Response (JSON) cho **User**.
+## 3. Đặc tả API thực tế
 
-## 4. Các bước thực hiện chi tiết
-
-### Bước 1: Định nghĩa Entity và Repository
-1. Tạo `User.java` và `Role.java` trong gói `auth.entity`.
-2. Tạo `UserRepository` và `RoleRepository` trong gói `auth.repository`.
-
-### Bước 2: Thiết lập Security & JWT
-1. Triển khai các lớp trong gói `security` để cấu hình Spring Security chạy ở chế độ Stateless (không dùng Session).
-2. Tạo `JwtUtils` để quản lý Token.
-
-### Bước 3: Triển khai Service
-1. Tạo `AuthService` interface với các phương thức `login` và `register`.
-2. Tạo `AuthServiceImpl` để thực hiện logic:
-    - `register`: Map `SignupRequest` -> `User` entity -> Save.
-    - `login`: Xác thực -> Tạo JWT -> Trả về `JwtResponse`.
-
-### Bước 4: Xây dựng Controller
-1. Tạo `AuthController` để expose các endpoint `/api/auth/signin` và `/api/auth/signup`.
-2. Sử dụng `@Valid` để kiểm tra dữ liệu đầu vào từ DTO.
-
-## 4. Đặc tả API
-
-### 4.1. Đăng ký tài khoản
-- **URL**: `/api/auth/signup`
+### 3.1. Đăng ký tài khoản
+- **URL**: `/api/v1/auth/register`
 - **Method**: `POST`
 - **Body**:
 ```json
 {
-  "username": "user123",
-  "email": "user123@example.com",
-  "password": "password123",
-  "role": ["user"]
-}
-```
-
-### 4.2. Đăng nhập
-- **URL**: `/api/auth/signin`
-- **Method**: `POST`
-- **Body**:
-```json
-{
-  "username": "user123",
+  "username": "admin",
+  "email": "admin@example.com",
   "password": "password123"
 }
 ```
-- **Response thành công**:
+
+### 3.2. Đăng nhập (Lấy Token)
+- **URL**: `/api/v1/auth/authenticate`
+- **Method**: `POST`
+- **Body**:
 ```json
 {
-  "token": "eyJhbGciOiJIUzUxMiJ9...",
-  "type": "Bearer",
-  "id": 1,
-  "username": "user123",
-  "email": "user123@example.com",
-  "roles": ["ROLE_USER"]
+  "username": "admin",
+  "password": "password123"
 }
 ```
 
-## 5. Hướng dẫn kiểm tra (Testing)
-1. Chạy ứng dụng.
-2. Sử dụng Postman hoặc Curl để gọi API Signup.
-3. Gọi API Signin để lấy Token.
-4. Thử truy cập một API được bảo vệ (ví dụ `/api/test/user`) bằng cách thêm Header: `Authorization: Bearer <TOKEN>`.
+### 3.3. Làm mới Token
+- **URL**: `/api/v1/auth/refresh-token`
+- **Method**: `POST`
+- **Body**: `{ "refreshToken": "..." }`
+
+## 4. Hướng dẫn vận hành & Kiểm tra (MỚI)
+
+### Bước 1: Khởi động Database (Docker)
+Yêu cầu đã cài đặt Docker và Docker Compose. Chạy lệnh sau tại thư mục gốc:
+```bash
+docker-compose up -d postgres
+```
+
+### Bước 2: Cấu hình Môi trường
+Kiểm tra file `.env` tại thư mục gốc để đảm bảo các thông số khớp với Database:
+```env
+POSTGRES_DB=airmonitor
+POSTGRES_USER=admin
+POSTGRES_PASSWORD=Duong123
+JWT_SECRET=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+```
+
+### Bước 3: Chạy ứng dụng
+```bash
+./mvnw spring-boot:run
+```
+
+### Bước 4: Kiểm tra với Postman
+1. Gọi API **Register** để tạo tài khoản.
+2. Gọi API **Authenticate** để lấy `accessToken`.
+3. Truy cập API bảo vệ (Ví dụ lấy danh sách user):
+   - **URL**: `GET http://localhost:8080/api/v1/users`
+   - **Header**: `Authorization: Bearer <TOKEN_CỦA_BẠN>`
 
 ---
-*Lưu ý: Luôn giữ bí mật chuỗi JWT Secret trong file application.properties.*
+*Lưu ý: Hệ thống sử dụng BCrypt để mã hóa mật khẩu trước khi lưu xuống DB. Không bao giờ lưu mật khẩu dưới dạng văn bản thuần túy.*
+   1. Thêm Dependency: Thêm springdoc-openapi-starter-webmvc-ui vào pom.xml.
+   2. Cấu hình Security: Cập nhật SecurityConfiguration.java để cho phép truy cập các endpoint của Swagger mà không cần đăng nhập.
+   3. Hỗ trợ JWT trong Swagger: Tạo file SwaggerConfig.java để bạn có thể dán JWT token vào Swagger UI và test các API yêu cầu bảo mật.
+
+  Sau khi bạn chạy ứng dụng, bạn có thể truy cập Swagger tại địa chỉ:
+  http://localhost:8080/swagger-ui/index.html
+
+  Cách test API có bảo mật trên Swagger:
+   1. Sử dụng API /api/v1/auth/authenticate (hoặc register) để lấy access_token.
+   2. Nhấn nút "Authorize" ở phía trên bên phải giao diện Swagger.
+   3. Dán mã token vào ô giá trị và nhấn Authorize. Bây giờ bạn có thể gọi các API yêu cầu quyền đăng nhập.
