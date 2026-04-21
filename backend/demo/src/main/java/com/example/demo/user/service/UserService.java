@@ -2,8 +2,12 @@ package com.example.demo.user.service;
 
 import com.example.demo.user.dto.UserDto;
 import com.example.demo.user.entity.User;
+import com.example.demo.user.enums.UserEnum;
 import com.example.demo.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,8 +21,24 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    public User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            throw new RuntimeException("Unauthorized");
+        }
+        return (User) authentication.getPrincipal();
+    }
+
+    public void validateAdmin(User user) {
+        if (user.getRole() != UserEnum.ADMIN) {
+            throw new RuntimeException("Only admin can perform this action!");
+        }
+    }
+
     @Transactional(readOnly = true)
     public List<UserDto> getAllUsers() {
+        // User currentUser = getCurrentUser();
+        // validateAdmin(currentUser);
         return userRepository.findAll().stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
@@ -33,6 +53,8 @@ public class UserService {
 
     @Transactional
     public UserDto createUser(UserDto userDto, String password) {
+        User currentUser = getCurrentUser();
+        validateAdmin(currentUser);
         User user = User.builder()
                 .username(userDto.getUsername())
                 .email(userDto.getEmail())
@@ -45,6 +67,8 @@ public class UserService {
 
     @Transactional
     public UserDto updateUser(Long id, UserDto userDto) {
+        // User currentUser = getCurrentUser();
+        // validateAdmin(currentUser);
         return userRepository.findById(id)
                 .map(user -> {
                     user.setUsername(userDto.getUsername());
@@ -58,6 +82,8 @@ public class UserService {
 
     @Transactional
     public void deleteUser(Long id) {
+        User currentUser = getCurrentUser();
+        validateAdmin(currentUser);
         userRepository.deleteById(id);
     }
 

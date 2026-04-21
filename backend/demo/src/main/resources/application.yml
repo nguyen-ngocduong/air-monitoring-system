@@ -29,7 +29,7 @@ application:
 
 # InfluxDB (lưu sensor data)
 influxdb:
-  url: ${INFLUXDB_URL:http://localhost:8086}
-  token: ${INFLUXDB_TOKEN}
-  org: ${INFLUXDB_ORG}
-  bucket: ${INFLUXDB_BUCKET:air-temparature-data}
+  url: ${INFLUX_URL:http://localhost:8086}
+  token: ${INFLUX_TOKEN}
+  org: ${INFLUX_ORG}
+  bucket: ${INFLUX_BUCKET:air-temparature-data}

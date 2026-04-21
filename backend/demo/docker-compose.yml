@@ -14,22 +14,5 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Duong123}
     restart: unless-stopped
 
-  influxdb:
-    image: influxdb:2
-    container_name: influxdb
-    ports:
-      - "8086:8086"
-    volumes:
-      - influxdb_data:/var/lib/influxdb2
-    environment:
-      - DOCKER_INFLUXDB_INIT_MODE=setup
-      - DOCKER_INFLUXDB_INIT_USERNAME=influxDB-admin
-      - DOCKER_INFLUXDB_INIT_PASSWORD=Duong123
-      - DOCKER_INFLUXDB_INIT_ORG=air-temparature-data
-      - DOCKER_INFLUXDB_INIT_BUCKET=air-temparature-data
-      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=my-super-secret-token
-    restart: unless-stopped
-
 volumes:
-  influxdb_data:
   postgres_data:

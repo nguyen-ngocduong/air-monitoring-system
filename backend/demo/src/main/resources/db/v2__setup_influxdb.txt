@@ -1,0 +1,28 @@
+# Cấu hình InfluxDB cho Hệ thống Giám sát Không khí
+
+## Cấu hình (Configuration)
+- **Tổ chức (Organization):** ${INFLUX_ORG}
+- **Bucket (Kho chứa dữ liệu):** air-temparature-data (mặc định)
+- **Mã Token:** ${INFLUX_TOKEN}
+
+## Phép đo (Measurements)
+### mqtt_consumer
+Phép đo này lưu trữ dữ liệu chất lượng không khí được thu thập từ các thiết bị thông qua giao thức MQTT.
+
+#### Thẻ (Tags):
+- `device`: ID duy nhất của thiết bị giám sát.
+- `topic`: Chủ đề (topic) MQTT mà dữ liệu được nhận từ đó.
+- `host`: Máy chủ đã xử lý dữ liệu.
+
+#### Trường dữ liệu (Fields):
+- `temperature`: Nhiệt độ môi trường (Kiểu Double).
+- `humidity`: Độ ẩm tương đối (Kiểu Double).
+- `pm2.5`: Bụi mịn có kích thước 2.5 micromet hoặc nhỏ hơn (Kiểu Double).
+- `pm10`: Bụi mịn có kích thước 10 micromet hoặc nhỏ hơn (Kiểu Double).
+- `co`: Nồng độ khí Carbon Monoxide (Kiểu Double).
+- `nh3`: Nồng độ khí Amoniac (Kiểu Double).
+
+## Khởi tạo (Initialization)
+Bucket InfluxDB và người dùng ban đầu được thiết lập tự động thông qua các biến môi trường trong tệp `docker-compose.yml`:
+- `DOCKER_INFLUXDB_INIT_MODE=setup`
+- `DOCKER_INFLUXDB_INIT_BUCKET=air-temparature-data`
