@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "Air Monitoring",
+    "slug": "air-monitoring-system",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./src/assets/icons/AppIcon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./src/assets/images/Splash_Screen.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/icons/AppIcon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.yourname.airmonitoring"
+    },
+    "web": {
+      "favicon": "./src/assets/icons/AppIcon.png"
+    }
+  }
+}
