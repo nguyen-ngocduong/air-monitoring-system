@@ -17,7 +17,7 @@ import com.example.demo.airquality.dto.AirQualityResponse;
 
 @Service
 @RequiredArgsConstructor
-public class AirQualituServiceImplements implements AirQualityService {
+public class AirQualityServiceImpl implements AirQualityService {
     private final AirQualityRepository airQualityRepository;
     private final AirQualityMapper airQualityMapper;
 
