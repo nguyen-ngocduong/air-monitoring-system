@@ -45,7 +45,9 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public UserDto getUserById(Long id) {
+    public UserDto getUserById() {
+        User currentUser = getCurrentUser();
+        Long id = currentUser.getId();
         return userRepository.findById(id)
                 .map(this::mapToDto)
                 .orElse(null);
@@ -66,9 +68,10 @@ public class UserService {
     }
 
     @Transactional
-    public UserDto updateUser(Long id, UserDto userDto) {
-        // User currentUser = getCurrentUser();
+    public UserDto updateUser(UserDto userDto) {
+        User currentUser = getCurrentUser();
         // validateAdmin(currentUser);
+        Long id = currentUser.getId();
         return userRepository.findById(id)
                 .map(user -> {
                     user.setUsername(userDto.getUsername());

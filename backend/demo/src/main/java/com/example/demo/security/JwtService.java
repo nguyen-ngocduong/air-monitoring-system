@@ -43,9 +43,17 @@ public class JwtService {
     }
 
     private String buildToken(Map<String, Object> extraClaims, UserDetails userDetails, long expiration) {
+        // Lấy ID từ đối tượng User (User kế thừa từ UserDetails)
+        String userId = "";
+        if (userDetails instanceof com.example.demo.user.entity.User) {
+            userId = ((com.example.demo.user.entity.User) userDetails).getId().toString();
+        } else {
+            userId = userDetails.getUsername();
+        }
+
         return Jwts.builder()
                 .claims(extraClaims)
-                .subject(userDetails.getUsername())
+                .subject(userId)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSignInKey(), Jwts.SIG.HS256)
@@ -53,10 +61,18 @@ public class JwtService {
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
+        final String idFromToken = extractUsername(token);
+        
+        // Kiểm tra nếu userDetails là instance của User entity của chúng ta
+        if (userDetails instanceof com.example.demo.user.entity.User) {
+            String userId = ((com.example.demo.user.entity.User) userDetails).getId().toString();
+            return (idFromToken.equals(userId)) && !isTokenExpired(token);
+        }
+        
+        // Phương án dự phòng
+        return (idFromToken.equals(userDetails.getUsername())) && !isTokenExpired(token);
     }
-
+    
     public long extractRemainingTimeMillis(String token) {
         long remaining = extractExpiration(token).getTime() - System.currentTimeMillis();
         return Math.max(remaining, 0L);

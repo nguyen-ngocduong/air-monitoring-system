@@ -21,8 +21,16 @@ public class ApplicationConfig {
 
     @Bean
     public UserDetailsService userDetailsService() {
-        return username -> userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        return identifier -> {
+            // Nếu identifier là số (ID từ Token JWT)
+            if (identifier.matches("\\d+")) {
+                return userRepository.findById(Long.parseLong(identifier))
+                        .orElseThrow(() -> new UsernameNotFoundException("User not found with ID: " + identifier));
+            }
+            // Nếu là chữ (Username từ form đăng nhập)
+            return userRepository.findByUsername(identifier)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + identifier));
+        };
     }
 
     @Bean
