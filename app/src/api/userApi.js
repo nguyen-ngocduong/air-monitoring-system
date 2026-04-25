@@ -1,6 +1,13 @@
 import axiosClient from './axiosClient';
 
 /**
+ * Lấy thông tin user hiện tại (dựa vào token trong header)
+ */
+export const getMyProfile = () => {
+    return axiosClient.get('/api/v1/users/profile');
+};
+
+/**
  * Lấy danh sách tất cả người dùng (Admin)
  */
 export const getAllUsers = () => {
@@ -9,7 +16,6 @@ export const getAllUsers = () => {
 
 /**
  * Lấy thông tin người dùng theo ID
- * @param {number} id 
  */
 export const getUserById = (id) => {
     return axiosClient.get(`/api/v1/users/${id}`);
@@ -17,11 +23,10 @@ export const getUserById = (id) => {
 
 /**
  * Cập nhật thông tin người dùng
- * @param {number} id 
  * @param {Object} userData 
  */
-export const updateUser = (id, userData) => {
-    return axiosClient.put(`/api/v1/users/${id}`, userData);
+export const updateUser = (userData) => {
+    return axiosClient.put(`/api/v1/users/profile`, userData);
 };
 
 /**

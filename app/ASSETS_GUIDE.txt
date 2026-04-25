@@ -1,0 +1,50 @@
+═══════════════════════════════════════════════════════════════════════════════
+                        📁 ASSETS ĐANG SỬ DỤNG
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ Assets hiện có và đang sử dụng:
+
+📂 src/assets/icons/
+  • AppIcon.png                          ✓
+  • logout.png                           ✓ (đang dùng cho nút đăng xuất)
+
+📂 src/assets/images/
+  • Splash_Screen.png                    ✓ (dùng cho Splash / màn hình khởi động)
+  • background.png                       ✓ (đang dùng cho Login & Register background)
+  • login.png                            ✓
+
+📂 src/assets/fonts/
+  • FontAwesome5_Brands.ttf              ✓
+  • FontAwesome5_Regular.ttf             ✓
+  • FontAwesome5_Solid.ttf               ✓
+  • FontAwesomeMap.js                    ✓
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🎨 Cách sử dụng trong code:
+
+1. Logout Icon (HomeScreen.js):
+   ```javascript
+   <Image 
+     source={require('../../assets/icons/logout.png')} 
+     style={{ width: 22, height: 22, tintColor: '#FF4757' }}
+   />
+   ```
+
+2. Background (LoginScreen.js, RegisterScreen.js):
+   ```javascript
+   <ImageBackground
+     source={require('../../assets/images/background.png')}
+     style={styles.background}
+     resizeMode="cover"
+   >
+   ```
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📌 Lưu ý:
+  • tintColor: '#FF4757' - Màu đỏ cho logout icon
+  • Kích thước logout icon: 22x22px (trong button 44x44px)
+  • Background sử dụng resizeMode="cover" để fill toàn màn hình
+
+═══════════════════════════════════════════════════════════════════════════════

@@ -2,45 +2,64 @@ import axios from 'axios';
 import { API_URL } from '../config/env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// khoi tao axios instance
 const axiosClient = axios.create({
-  baseURL: API_URL,
+  baseURL: API_URL || '',
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // thoi gian cho ket noi
+  timeout: 10000,
 });
-// gan token vao request header
+
+// Interceptor cho Request
 axiosClient.interceptors.request.use(
   async (config) => {
-    const token = await AsyncStorage.getItem("accessToken");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // KHÔNG gửi token cho các endpoint đăng nhập/đăng ký
+    const isAuthRequest = config.url && (config.url.includes('/auth/authenticate') || config.url.includes('/auth/register'));
+    
+    if (!isAuthRequest) {
+      try {
+        const token = await AsyncStorage.getItem("accessToken");
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+      } catch (e) {
+        console.log('Lỗi lấy token');
+      }
     }
-
     return config;
   },
+  (error) => Promise.reject(error)
+);
+
+// Interceptor cho Response
+axiosClient.interceptors.response.use(
+  (response) => response.data,
   (error) => {
-    return Promise.reject(error);
+    let errorInfo = {
+      message: 'Đã có lỗi xảy ra',
+      status: 0
+    };
+
+    if (error && error.response) {
+      // Lỗi từ phía Server
+      errorInfo.status = error.response.status;
+      const serverData = error.response.data;
+      
+      // Sử dụng thông báo từ server nếu có
+      errorInfo.message = (serverData && serverData.message) 
+                          ? serverData.message 
+                          : `Lỗi hệ thống (${error.response.status})`;
+      
+      // Log lỗi ra console để debug (dùng cách an toàn)
+      console.log('API Error Status:', String(errorInfo.status));
+    } else if (error && error.request) {
+      errorInfo.message = 'Không thể kết nối tới máy chủ. Vui lòng kiểm tra IP hoặc mạng.';
+    } else {
+      errorInfo.message = error ? error.message : 'Lỗi khởi tạo yêu cầu';
+    }
+
+    return Promise.reject(errorInfo);
   }
 );
-// xu ly response
-axiosClient.interceptors.response.use(
-    response => response.data,
-    error => {
-        if (error.response) {
-            // Xu ly loi tu server tra ve
-            console.error('API Error:', error.response.data);
-            return Promise.reject(error.response.data);
-        } else if (error.request) {
-            // Loi khong nhan duoc phan hoi tu server
-            console.error('No response from server:', error.request);
-            return Promise.reject({ message: 'No response from server' });
-        } else {
-            // Loi xay ra khi tao request
-            console.error('Error creating request:', error.message);
-            return Promise.reject({ message: error.message });
-        }
-    }
-);
+
 export default axiosClient;
