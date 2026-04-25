@@ -1,0 +1,32 @@
+name: Mobile App CI
+
+on:
+  push:
+    paths:
+      - 'app/**'
+    branches: [ main ]
+  pull_request:
+    paths:
+      - 'app/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: app
+
+      - name: Expo Check
+        run: npx expo -v
+        working-directory: app

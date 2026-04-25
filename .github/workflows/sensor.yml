@@ -1,0 +1,37 @@
+name: Sensor ESP32 CI
+
+on:
+  push:
+    paths:
+      - 'sensor-ESP32/**'
+    branches: [ main ]
+  pull_request:
+    paths:
+      - 'sensor-ESP32/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/platformio.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install PlatformIO
+        run: pip install -U platformio
+
+      - name: Run PlatformIO Build
+        run: pio run
+        working-directory: sensor-ESP32
