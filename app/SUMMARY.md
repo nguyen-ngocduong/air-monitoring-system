@@ -207,3 +207,4 @@ air-monitoring-app/
 **Version**: 2.0.0  
 **Last Updated**: 25/04/2026  
 **Status**: ✅ Production Ready
+npx expo install babel-preset-expo@~54.0.10 react-native-safe-area-context@~5.6.0 react-native-screens@~4.16.0
