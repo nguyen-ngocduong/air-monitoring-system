@@ -24,12 +24,12 @@ const PADDING_BOTTOM = 35;
 
 // ─── Màu theo chỉ số ─────────────────────────────────────────────────────────
 const METRIC_COLORS = {
-  pm25: '#FFD93D',
-  pm10: '#FF8C42',
-  co: '#E74C3C',
-  nh3: '#A29BFE',
-  temperature: '#FF6B6B',
-  humidity: '#4ECDC4',
+  pm25: '#FBBF24',
+  pm10: '#F59E0B',
+  co: '#EF4444',
+  nh3: '#A78BFA',
+  temperature: '#F87171',
+  humidity: '#22D3EE',
 };
 
 // ─── Biểu đồ Line ────────────────────────────────────────────────────────────
@@ -190,6 +190,8 @@ const ChartScreen = ({ navigation }) => {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [chartType, setChartType] = useState('line'); // 'line' | 'bar'
   const [selectedMetrics, setSelectedMetrics] = useState(['pm25', 'pm10', 'temperature', 'humidity']);
+  const [searchStartTime, setSearchStartTime] = useState('');
+  const [searchEndTime, setSearchEndTime] = useState('');
 
   const { chartData, loading, error, fetchChart } = useAirQuality(deviceName);
 
@@ -220,10 +222,17 @@ const ChartScreen = ({ navigation }) => {
 
       startISO = start.toISOString();
       endISO   = end.toISOString();
+      
+      // Lưu lại để hiển thị
+      setSearchStartTime(startDate.trim());
+      setSearchEndTime(endDate.trim());
     } else {
       const now = new Date();
       endISO   = now.toISOString();
       startISO = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+      
+      setSearchStartTime(new Date(now.getTime() - 24 * 60 * 60 * 1000).toLocaleString('vi-VN'));
+      setSearchEndTime(now.toLocaleString('vi-VN'));
     }
 
     fetchChart(startISO, endISO);
@@ -339,7 +348,7 @@ const ChartScreen = ({ navigation }) => {
         {/* ── Biểu đồ ── */}
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#FFD93D" />
+            <ActivityIndicator size="large" color="#FBBF24" />
             <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
           </View>
         ) : chartData.length === 0 ? (
@@ -376,6 +385,21 @@ const ChartScreen = ({ navigation }) => {
             {/* ── Bảng dữ liệu ── */}
             <View style={styles.tableCard}>
               <Text style={styles.tableTitle}>📋 Dữ liệu gần nhất</Text>
+              
+              {/* Hiển thị khoảng thời gian tìm kiếm */}
+              {searchStartTime && searchEndTime && (
+                <View style={styles.timeRangeBox}>
+                  <View style={styles.timeRangeCol}>
+                    <Text style={styles.timeRangeLabel}>Từ:</Text>
+                    <Text style={styles.timeRangeValue}>{searchStartTime}</Text>
+                  </View>
+                  <View style={styles.timeRangeCol}>
+                    <Text style={styles.timeRangeLabel}>Đến:</Text>
+                    <Text style={styles.timeRangeValue}>{searchEndTime}</Text>
+                  </View>
+                </View>
+              )}
+              
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View>
                   <View style={styles.tableHeader}>
@@ -388,7 +412,7 @@ const ChartScreen = ({ navigation }) => {
                   </View>
                   {[...chartData].reverse().slice(0, 10).map((item, index) => (
                     <View key={index} style={[styles.tableRow, index % 2 === 0 && styles.tableRowAlt]}>
-                      <Text style={[styles.tableCell, { width: 120, color: '#9CA3AF', fontSize: 10 }]}>
+                      <Text style={[styles.tableCell, { width: 120, color: '#D1D5DB', fontSize: 11 }]}>
                         {new Date(item.timestamp).toLocaleString('vi-VN', {
                           month: '2-digit', day: '2-digit',
                           hour: '2-digit', minute: '2-digit',
@@ -397,7 +421,7 @@ const ChartScreen = ({ navigation }) => {
                       {METRICS.map(m => (
                         <Text
                           key={m.key}
-                          style={[styles.tableCell, { width: 70, color: METRIC_COLORS[m.key], fontWeight: '600' }]}
+                          style={[styles.tableCell, { width: 70, color: METRIC_COLORS[m.key], fontWeight: '700' }]}
                         >
                           {String(item[m.key] ?? '--')}
                         </Text>
@@ -503,70 +527,74 @@ const styles = StyleSheet.create({
   header:           { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 14, backgroundColor: '#0F1426', borderBottomWidth: 1, borderBottomColor: '#1E2540' },
   backBtn:          { width: 40, height: 40, borderRadius: 20, backgroundColor: '#1A1F35', justifyContent: 'center', alignItems: 'center' },
   backIcon:         { color: '#FFFFFF', fontSize: 28, lineHeight: 32, marginTop: -2 },
-  headerTitle:      { color: '#FFFFFF', fontSize: 18, fontWeight: '700' },
+  headerTitle:      { color: '#FFFFFF', fontSize: 19, fontWeight: '800', letterSpacing: 0.5 },
   filterBtn:        { width: 40, height: 40, borderRadius: 20, backgroundColor: '#1A1F35', justifyContent: 'center', alignItems: 'center' },
-  filterIcon:       { fontSize: 18 },
+  filterIcon:       { fontSize: 20 },
 
   scrollContent:    { padding: 16, paddingBottom: 40 },
 
   // Chart type selector
   chartTypeRow:     { flexDirection: 'row', gap: 12, marginBottom: 16 },
   chartTypeBtn:     { flex: 1, paddingVertical: 12, borderRadius: 14, backgroundColor: '#141929', alignItems: 'center', borderWidth: 1, borderColor: '#1E2540' },
-  chartTypeBtnActive: { backgroundColor: '#FFD93D22', borderColor: '#FFD93D' },
-  chartTypeText:    { color: '#6B7280', fontSize: 14, fontWeight: '600' },
-  chartTypeTextActive: { color: '#FFD93D' },
+  chartTypeBtnActive: { backgroundColor: '#FBBF2422', borderColor: '#FBBF24' },
+  chartTypeText:    { color: '#9CA3AF', fontSize: 15, fontWeight: '700' },
+  chartTypeTextActive: { color: '#FBBF24' },
 
   // Metrics selector
   metricsSelector:  { backgroundColor: '#141929', borderRadius: 18, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#1E2540' },
-  sectionTitle:     { color: '#9CA3AF', fontSize: 12, fontWeight: '600', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 },
+  sectionTitle:     { color: '#D1D5DB', fontSize: 13, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 12 },
   metricsGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   metricChip:       { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, backgroundColor: '#0F1426', borderWidth: 1, borderColor: '#1E2540' },
-  metricChipIcon:   { fontSize: 14 },
-  metricChipText:   { color: '#9CA3AF', fontSize: 12, fontWeight: '600' },
+  metricChipIcon:   { fontSize: 16 },
+  metricChipText:   { color: '#D1D5DB', fontSize: 13, fontWeight: '700' },
 
   // Error
-  errorBanner:      { backgroundColor: '#FF475715', borderWidth: 1, borderColor: '#FF475740', borderRadius: 12, padding: 12, marginBottom: 12 },
-  errorText:        { color: '#FF4757', fontSize: 12 },
+  errorBanner:      { backgroundColor: '#EF444415', borderWidth: 1, borderColor: '#EF444440', borderRadius: 12, padding: 12, marginBottom: 12 },
+  errorText:        { color: '#FCA5A5', fontSize: 13, fontWeight: '600' },
 
   // Loading & Empty
   loadingContainer: { alignItems: 'center', paddingVertical: 60, gap: 12 },
-  loadingText:      { color: '#6B7280', fontSize: 13 },
+  loadingText:      { color: '#9CA3AF', fontSize: 14, fontWeight: '500' },
   emptyContainer:   { alignItems: 'center', paddingVertical: 60, gap: 10 },
-  emptyIcon:        { fontSize: 48 },
-  emptyTitle:       { color: '#D1D5DB', fontSize: 16, fontWeight: '700' },
-  emptyDesc:        { color: '#6B7280', fontSize: 13, textAlign: 'center' },
+  emptyIcon:        { fontSize: 56 },
+  emptyTitle:       { color: '#F3F4F6', fontSize: 17, fontWeight: '800' },
+  emptyDesc:        { color: '#9CA3AF', fontSize: 14, textAlign: 'center', fontWeight: '500' },
 
   // Chart card
   chartCard:        { backgroundColor: '#141929', borderRadius: 20, padding: 18, marginBottom: 16, borderWidth: 1, borderColor: '#1E2540' },
   chartHeader:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   chartTitleRow:    { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  chartDot:         { width: 10, height: 10, borderRadius: 5 },
-  chartTitle:       { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
+  chartDot:         { width: 12, height: 12, borderRadius: 6 },
+  chartTitle:       { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
 
   // Table
   tableCard:        { backgroundColor: '#141929', borderRadius: 20, padding: 18, borderWidth: 1, borderColor: '#1E2540' },
-  tableTitle:       { color: '#FFFFFF', fontSize: 15, fontWeight: '700', marginBottom: 14 },
+  tableTitle:       { color: '#FFFFFF', fontSize: 16, fontWeight: '800', marginBottom: 14 },
+  timeRangeBox:     { flexDirection: 'row', gap: 12, marginBottom: 14, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: '#1E2540' },
+  timeRangeCol:     { flex: 1 },
+  timeRangeLabel:   { color: '#9CA3AF', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  timeRangeValue:   { color: '#F3F4F6', fontSize: 12, fontWeight: '600' },
   tableHeader:      { flexDirection: 'row', paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#1E2540', marginBottom: 4 },
-  tableHeaderText:  { color: '#6B7280', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', textAlign: 'center' },
+  tableHeaderText:  { color: '#9CA3AF', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', textAlign: 'center' },
   tableRow:         { flexDirection: 'row', paddingVertical: 8 },
   tableRowAlt:      { backgroundColor: '#0F1426', borderRadius: 8 },
-  tableCell:        { color: '#D1D5DB', fontSize: 11, textAlign: 'center' },
+  tableCell:        { color: '#F3F4F6', fontSize: 12, textAlign: 'center', fontWeight: '600' },
 
   // Modal
   modalOverlay:     { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.8)', justifyContent: 'flex-end' },
   modalContent:     { backgroundColor: '#141929', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, borderTopWidth: 1, borderColor: '#1E2540' },
-  modalTitle:       { color: '#FFFFFF', fontSize: 20, fontWeight: '800', marginBottom: 20, textAlign: 'center' },
+  modalTitle:       { color: '#FFFFFF', fontSize: 22, fontWeight: '900', marginBottom: 20, textAlign: 'center', letterSpacing: 0.5 },
   inputGroup:       { marginBottom: 16 },
-  inputLabel:       { color: '#9CA3AF', fontSize: 12, fontWeight: '600', marginBottom: 6 },
-  input:            { backgroundColor: '#0F1426', borderWidth: 1, borderColor: '#1E2540', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, color: '#FFFFFF', fontSize: 14 },
-  hint:             { color: '#6B7280', fontSize: 11, marginBottom: 20, textAlign: 'center' },
-  inputHint:        { color: '#4B5563', fontSize: 10, marginTop: 5, marginLeft: 4 },
+  inputLabel:       { color: '#D1D5DB', fontSize: 13, fontWeight: '700', marginBottom: 6 },
+  input:            { backgroundColor: '#0F1426', borderWidth: 1, borderColor: '#1E2540', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, color: '#FFFFFF', fontSize: 15, fontWeight: '500' },
+  hint:             { color: '#9CA3AF', fontSize: 12, marginBottom: 20, textAlign: 'center', fontWeight: '500' },
+  inputHint:        { color: '#6B7280', fontSize: 11, marginTop: 5, marginLeft: 4, fontWeight: '500' },
   modalButtons:     { flexDirection: 'row', gap: 12 },
   modalBtn:         { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
   modalBtnCancel:   { backgroundColor: '#1E2540' },
-  modalBtnSearch:   { backgroundColor: '#FFD93D' },
-  modalBtnTextCancel: { color: '#9CA3AF', fontSize: 15, fontWeight: '600' },
-  modalBtnTextSearch: { color: '#0A0E1A', fontSize: 15, fontWeight: '700' },
+  modalBtnSearch:   { backgroundColor: '#FBBF24' },
+  modalBtnTextCancel: { color: '#D1D5DB', fontSize: 16, fontWeight: '700' },
+  modalBtnTextSearch: { color: '#0F1426', fontSize: 16, fontWeight: '800' },
 });
 
 export default ChartScreen;

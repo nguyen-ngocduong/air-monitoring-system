@@ -17,11 +17,11 @@ import { useAirQuality } from '../../hooks/useAirQuality';
 // ─── Màu theo PM2.5 ──────────────────────────────────────────────────────────
 const getPm25Color = (val) => {
   const v = Number(val || 0);
-  if (v <= 12)  return '#00C897';
-  if (v <= 35)  return '#FFD93D';
-  if (v <= 55)  return '#FF8C42';
-  if (v <= 150) return '#FF4757';
-  return '#9B59B6';
+  if (v <= 12)  return '#10B981';
+  if (v <= 35)  return '#FBBF24';
+  if (v <= 55)  return '#F59E0B';
+  if (v <= 150) return '#EF4444';
+  return '#DC2626';
 };
 
 const getPm25Status = (val) => {
@@ -42,7 +42,7 @@ const HistoryItem = ({ item, index }) => {
     <View style={[styles.historyItem, { borderLeftColor: pm25Color }]}>
       <View style={styles.itemLeft}>
         <Text style={styles.itemIndex}>#{index + 1}</Text>
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={styles.itemTime}>
             {new Date(item.timestamp).toLocaleString('vi-VN', {
               day: '2-digit', month: '2-digit', year: 'numeric',
@@ -75,8 +75,8 @@ const HistoryItem = ({ item, index }) => {
           <Text style={[styles.pm25Status, { color: pm25Color }]}>{pm25Status}</Text>
         </View>
         {item.pm10 !== undefined && (
-          <View style={[styles.pm10Badge, { backgroundColor: '#FF8C4222', borderColor: '#FF8C4255' }]}>
-            <Text style={[styles.pm10Value, { color: '#FF8C42' }]}>{String(item.pm10)}</Text>
+          <View style={[styles.pm10Badge, { backgroundColor: '#F59E0B22', borderColor: '#F59E0B55' }]}>
+            <Text style={[styles.pm10Value, { color: '#F59E0B' }]}>{String(item.pm10)}</Text>
             <Text style={styles.pm10Unit}>PM10</Text>
           </View>
         )}
@@ -91,6 +91,8 @@ const HistoryScreen = ({ navigation }) => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const [searchStartTime, setSearchStartTime] = useState('');
+  const [searchEndTime, setSearchEndTime] = useState('');
 
   const { historyData, loading, error, fetchHistory } = useAirQuality(deviceName);
 
@@ -122,11 +124,18 @@ const HistoryScreen = ({ navigation }) => {
       // Gửi lên backend dạng ISO 8601
       startISO = start.toISOString();
       endISO   = end.toISOString();
+      
+      // Lưu lại để hiển thị
+      setSearchStartTime(startDate.trim());
+      setSearchEndTime(endDate.trim());
     } else {
       // Mặc định: 24 giờ qua
       const now = new Date();
       endISO   = now.toISOString();
       startISO = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+      
+      setSearchStartTime(new Date(now.getTime() - 24 * 60 * 60 * 1000).toLocaleString('vi-VN'));
+      setSearchEndTime(now.toLocaleString('vi-VN'));
     }
 
     fetchHistory(startISO, endISO);
@@ -174,20 +183,34 @@ const HistoryScreen = ({ navigation }) => {
 
       {/* ── Thống kê nhanh ── */}
       {historyData.length > 0 && (
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Tổng bản ghi</Text>
-            <Text style={styles.statValue}>{historyData.length}</Text>
+        <>
+          <View style={styles.timeRangeBox}>
+            <View style={styles.timeRangeItem}>
+              <Text style={styles.timeRangeLabel}>Từ</Text>
+              <Text style={styles.timeRangeValue}>{searchStartTime || '--'}</Text>
+            </View>
+            <View style={styles.timeRangeDivider} />
+            <View style={styles.timeRangeItem}>
+              <Text style={styles.timeRangeLabel}>Đến</Text>
+              <Text style={styles.timeRangeValue}>{searchEndTime || '--'}</Text>
+            </View>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>TB PM2.5</Text>
-            <Text style={[styles.statValue, { color: getPm25Color(avgPm25) }]}>{avgPm25}</Text>
+          
+          <View style={styles.statsRow}>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>Tổng bản ghi</Text>
+              <Text style={styles.statValue}>{historyData.length}</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>TB PM2.5</Text>
+              <Text style={[styles.statValue, { color: getPm25Color(avgPm25) }]}>{avgPm25}</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>Max PM2.5</Text>
+              <Text style={[styles.statValue, { color: getPm25Color(maxPm25) }]}>{maxPm25}</Text>
+            </View>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Max PM2.5</Text>
-            <Text style={[styles.statValue, { color: getPm25Color(maxPm25) }]}>{maxPm25}</Text>
-          </View>
-        </View>
+        </>
       )}
 
       {/* ── Lỗi ── */}
@@ -299,15 +322,22 @@ const styles = StyleSheet.create({
   header:           { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 14, backgroundColor: '#0F1426', borderBottomWidth: 1, borderBottomColor: '#1E2540' },
   backBtn:          { width: 40, height: 40, borderRadius: 20, backgroundColor: '#1A1F35', justifyContent: 'center', alignItems: 'center' },
   backIcon:         { color: '#FFFFFF', fontSize: 28, lineHeight: 32, marginTop: -2 },
-  headerTitle:      { color: '#FFFFFF', fontSize: 18, fontWeight: '700' },
+  headerTitle:      { color: '#FFFFFF', fontSize: 19, fontWeight: '800', letterSpacing: 0.5 },
   filterBtn:        { width: 40, height: 40, borderRadius: 20, backgroundColor: '#1A1F35', justifyContent: 'center', alignItems: 'center' },
-  filterIcon:       { fontSize: 18 },
+  filterIcon:       { fontSize: 20 },
+
+  // Time range
+  timeRangeBox:     { flexDirection: 'row', marginHorizontal: 16, marginTop: 12, marginBottom: 8, backgroundColor: '#141929', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#1E2540', gap: 12 },
+  timeRangeItem:    { flex: 1 },
+  timeRangeLabel:   { color: '#9CA3AF', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  timeRangeValue:   { color: '#F3F4F6', fontSize: 12, fontWeight: '600' },
+  timeRangeDivider: { width: 1, backgroundColor: '#1E2540' },
 
   // Stats
-  statsRow:         { flexDirection: 'row', paddingHorizontal: 16, gap: 10, marginVertical: 12 },
+  statsRow:         { flexDirection: 'row', paddingHorizontal: 16, gap: 10, marginBottom: 12 },
   statCard:         { flex: 1, backgroundColor: '#141929', borderRadius: 14, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: '#1E2540' },
-  statLabel:        { color: '#6B7280', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  statValue:        { color: '#FFFFFF', fontSize: 18, fontWeight: '800', marginTop: 4 },
+  statLabel:        { color: '#9CA3AF', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  statValue:        { color: '#FFFFFF', fontSize: 20, fontWeight: '900', marginTop: 4 },
 
   // Error
   errorBanner:      { marginHorizontal: 16, marginBottom: 8, backgroundColor: '#FF475715', borderWidth: 1, borderColor: '#FF475740', borderRadius: 12, padding: 12 },
@@ -319,44 +349,44 @@ const styles = StyleSheet.create({
   // History item
   historyItem:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#141929', borderRadius: 16, padding: 14, marginBottom: 10, borderLeftWidth: 4, borderWidth: 1, borderColor: '#1E2540' },
   itemLeft:         { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  itemIndex:        { color: '#374151', fontSize: 11, fontWeight: '700', width: 28 },
-  itemTime:         { color: '#D1D5DB', fontSize: 12, fontWeight: '600' },
+  itemIndex:        { color: '#4B5563', fontSize: 12, fontWeight: '800', width: 32 },
+  itemTime:         { color: '#F3F4F6', fontSize: 13, fontWeight: '700', marginBottom: 2 },
   itemMetrics:      { flexDirection: 'row', gap: 6, marginTop: 6, flexWrap: 'wrap' },
-  metricChip:       { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#1E2540', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
-  metricChipIcon:   { fontSize: 10 },
-  metricChipText:   { color: '#9CA3AF', fontSize: 10 },
+  metricChip:       { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#1E2540', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 },
+  metricChipIcon:   { fontSize: 11 },
+  metricChipText:   { color: '#D1D5DB', fontSize: 11, fontWeight: '600' },
 
   // PM badges
   itemRight:        { alignItems: 'flex-end', gap: 6 },
   pm25Badge:        { alignItems: 'center', borderRadius: 12, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, minWidth: 60 },
-  pm25Value:        { fontSize: 18, fontWeight: '900' },
-  pm25Unit:         { color: '#6B7280', fontSize: 8, marginTop: -2 },
-  pm25Status:       { fontSize: 9, fontWeight: '700', marginTop: 1 },
+  pm25Value:        { fontSize: 20, fontWeight: '900' },
+  pm25Unit:         { color: '#9CA3AF', fontSize: 9, marginTop: -2, fontWeight: '600' },
+  pm25Status:       { fontSize: 10, fontWeight: '800', marginTop: 1 },
   pm10Badge:        { alignItems: 'center', borderRadius: 10, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4, minWidth: 50 },
-  pm10Value:        { fontSize: 14, fontWeight: '800' },
-  pm10Unit:         { color: '#6B7280', fontSize: 8 },
+  pm10Value:        { fontSize: 15, fontWeight: '900' },
+  pm10Unit:         { color: '#9CA3AF', fontSize: 9, fontWeight: '600' },
 
   // Empty
   emptyContainer:   { alignItems: 'center', paddingTop: 80, gap: 10 },
-  emptyIcon:        { fontSize: 48 },
-  emptyTitle:       { color: '#D1D5DB', fontSize: 16, fontWeight: '700' },
-  emptyDesc:        { color: '#6B7280', fontSize: 13, textAlign: 'center', paddingHorizontal: 40 },
+  emptyIcon:        { fontSize: 56 },
+  emptyTitle:       { color: '#F3F4F6', fontSize: 17, fontWeight: '800' },
+  emptyDesc:        { color: '#9CA3AF', fontSize: 14, textAlign: 'center', paddingHorizontal: 40, fontWeight: '500' },
 
   // Modal
   modalOverlay:     { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.8)', justifyContent: 'flex-end' },
   modalContent:     { backgroundColor: '#141929', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, borderTopWidth: 1, borderColor: '#1E2540' },
-  modalTitle:       { color: '#FFFFFF', fontSize: 20, fontWeight: '800', marginBottom: 20, textAlign: 'center' },
+  modalTitle:       { color: '#FFFFFF', fontSize: 22, fontWeight: '900', marginBottom: 20, textAlign: 'center', letterSpacing: 0.5 },
   inputGroup:       { marginBottom: 16 },
-  inputLabel:       { color: '#9CA3AF', fontSize: 12, fontWeight: '600', marginBottom: 6 },
-  input:            { backgroundColor: '#0F1426', borderWidth: 1, borderColor: '#1E2540', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, color: '#FFFFFF', fontSize: 14 },
-  hint:             { color: '#6B7280', fontSize: 11, marginBottom: 20, textAlign: 'center' },
-  inputHint:        { color: '#4B5563', fontSize: 10, marginTop: 5, marginLeft: 4 },
+  inputLabel:       { color: '#D1D5DB', fontSize: 13, fontWeight: '700', marginBottom: 6 },
+  input:            { backgroundColor: '#0F1426', borderWidth: 1, borderColor: '#1E2540', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, color: '#FFFFFF', fontSize: 15, fontWeight: '500' },
+  hint:             { color: '#9CA3AF', fontSize: 12, marginBottom: 20, textAlign: 'center', fontWeight: '500' },
+  inputHint:        { color: '#6B7280', fontSize: 11, marginTop: 5, marginLeft: 4, fontWeight: '500' },
   modalButtons:     { flexDirection: 'row', gap: 12 },
   modalBtn:         { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
   modalBtnCancel:   { backgroundColor: '#1E2540' },
-  modalBtnSearch:   { backgroundColor: '#4ECDC4' },
-  modalBtnTextCancel: { color: '#9CA3AF', fontSize: 15, fontWeight: '600' },
-  modalBtnTextSearch: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
+  modalBtnSearch:   { backgroundColor: '#10B981' },
+  modalBtnTextCancel: { color: '#D1D5DB', fontSize: 16, fontWeight: '700' },
+  modalBtnTextSearch: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
 });
 
 export default HistoryScreen;
