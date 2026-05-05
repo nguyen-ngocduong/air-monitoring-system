@@ -30,6 +30,13 @@ export const useAirQuality = (deviceName) => {
     }
   }, []);
 
+  // Normalize: map pm2_5 → pm25, time → timestamp để app dùng nhất quán
+  const normalizeItem = (item) => ({
+    ...item,
+    pm25: item.pm25 ?? item.pm2_5,
+    timestamp: item.timestamp ?? item.time,
+  });
+
   const fetchHistory = useCallback(async (startTime, endTime) => {
     const name = deviceNameRef.current;
     if (!name) return;
@@ -37,9 +44,8 @@ export const useAirQuality = (deviceName) => {
     setError(null);
     try {
       const data = await getAirQualityHistory(name, startTime, endTime);
-      // Backend có thể trả về array trực tiếp hoặc { data: [...] }
       const list = Array.isArray(data) ? data : (data?.data || data?.content || []);
-      setHistoryData(list);
+      setHistoryData(list.map(normalizeItem));
     } catch (err) {
       console.log('Fetch history error:', err.message || err);
       setError(err.message || 'Lỗi lấy lịch sử');
@@ -55,9 +61,8 @@ export const useAirQuality = (deviceName) => {
     setError(null);
     try {
       const data = await getChartData(name, startTime, endTime);
-      // Backend có thể trả về array trực tiếp hoặc { data: [...] }
       const list = Array.isArray(data) ? data : (data?.data || data?.content || []);
-      setChartData(list);
+      setChartData(list.map(normalizeItem));
     } catch (err) {
       console.log('Fetch chart error:', err.message || err);
       setError(err.message || 'Lỗi lấy biểu đồ');
